@@ -4,34 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
-	"strings"
 )
-
-type APIBind struct {
-	path          *string
-	function      *func(w http.ResponseWriter, r *http.Request)
-	variableCount int
-}
-
-func (a *APIBind) comparePriorityTo(bind *APIBind) int {
-	selfPath := *a.path
-	targetPath := *bind.path
-	selfSplit := strings.Split(selfPath, "/")
-	targetSplit := strings.Split(targetPath, "/")
-	if len(selfSplit) > len(targetSplit) {
-		return 1
-	} else if len(targetSplit) < len(selfSplit) {
-		return -1
-	}
-	for i := 0; i < len(selfSplit) && i < len(targetSplit); i++ {
-		if !isPathVariable(selfSplit[i]) && isPathVariable(targetSplit[i]) {
-			return -1
-		} else if isPathVariable(selfSplit[i]) && !isPathVariable(targetSplit[i]) {
-			return 1
-		}
-	}
-	return 0
-}
 
 func isPathVariable(text string) bool {
 	if len(text) == 0 {
@@ -45,7 +18,7 @@ func isPathVariable(text string) bool {
 
 type Router struct {
 	MuxRouter *mux.Router
-	apiBinds  []*APIBind
+	routes    []*Route
 }
 
 func NewRouter() *Router {
@@ -54,41 +27,34 @@ func NewRouter() *Router {
 	}
 }
 func (r *Router) BuildMuxRouter() *mux.Router {
-	sortedApiBinds := r.apiBinds
-	for i := range sortedApiBinds {
+	sortedRoutes := r.routes
+	for i := range sortedRoutes {
 		for j := i; j > 0; j-- {
-			if sortedApiBinds[j-1].comparePriorityTo(sortedApiBinds[j]) > 0 {
-				sortedApiBinds[j-1], sortedApiBinds[j] = sortedApiBinds[j], sortedApiBinds[j-1]
+			if sortedRoutes[j-1].comparePriorityTo(sortedRoutes[j]) > 0 {
+				sortedRoutes[j-1], sortedRoutes[j] = sortedRoutes[j], sortedRoutes[j-1]
 			}
 		}
 	}
 	fmt.Println("Binding Controllers:")
-	for _, apiBind := range sortedApiBinds {
-		r.MuxRouter.HandleFunc(*apiBind.path, *apiBind.function)
-		lessTrailingSlashURL := *apiBind.path
+	for _, route := range sortedRoutes {
+		r.MuxRouter.HandleFunc(*route.path, *route.function)
+		lessTrailingSlashURL := *route.path
 		lessTrailingSlashURL = lessTrailingSlashURL[:len(lessTrailingSlashURL)-1]
-		r.MuxRouter.HandleFunc(lessTrailingSlashURL, *apiBind.function)
-		fmt.Println(*apiBind.path)
+		muxRoute := r.MuxRouter.HandleFunc(lessTrailingSlashURL, *route.function)
+		if len(route.methods) != 0 {
+			muxRoute.Methods(route.methods...)
+		}
+		fmt.Println(*route.path)
 	}
 	return r.MuxRouter
 }
-func (r *Router) Bind(path string, function func(w http.ResponseWriter, r *http.Request)) {
+func (r *Router) Bind(path string, function func(w http.ResponseWriter, r *http.Request)) *Route {
 	path = normalizePath(path)
-	r.apiBinds = append(r.apiBinds, &APIBind{
-		&path,
-		&function,
-		0,
-	})
-}
-func normalizePath(path string) string {
-	if len(path) == 0 {
-		return path
+	route := &Route{
+		path:          &path,
+		function:      &function,
+		variableCount: 0,
 	}
-	if path[0] != '/' {
-		path = "/" + path
-	}
-	if path[len(path)-1] != '/' {
-		path += "/"
-	}
-	return path
+	r.routes = append(r.routes, route)
+	return route
 }
