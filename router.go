@@ -37,10 +37,13 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 	}
 	fmt.Println("Binding Controllers:")
 	for _, route := range sortedRoutes {
-		r.MuxRouter.HandleFunc(*route.path, *route.function)
+		muxRoute := r.MuxRouter.HandleFunc(*route.path, *route.function)
 		lessTrailingSlashURL := *route.path
 		lessTrailingSlashURL = lessTrailingSlashURL[:len(lessTrailingSlashURL)-1]
-		muxRoute := r.MuxRouter.HandleFunc(lessTrailingSlashURL, *route.function)
+		if len(route.methods) != 0 {
+			muxRoute.Methods(route.methods...)
+		}
+		muxRoute = r.MuxRouter.HandleFunc(lessTrailingSlashURL, *route.function)
 		if len(route.methods) != 0 {
 			muxRoute.Methods(route.methods...)
 		}
