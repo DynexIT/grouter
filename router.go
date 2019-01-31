@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strings"
 )
 
 func isPathVariable(text string) bool {
@@ -37,7 +38,18 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 	}
 	fmt.Println("Binding Controllers:")
 	for _, route := range sortedRoutes {
-		muxRoute := r.MuxRouter.HandleFunc(*route.path, *route.function)
+		muxRoute := r.MuxRouter.HandleFunc(*route.path, func(w http.ResponseWriter, r2 *http.Request) {
+			f := *route.function
+			if route.optionsMiddleWare {
+				if strings.ToLower(r2.Method) == "options" {
+					w.WriteHeader(200)
+					return
+				}
+				f(w, r2)
+			} else {
+				f(w, r2)
+			}
+		})
 		lessTrailingSlashURL := *route.path
 		lessTrailingSlashURL = lessTrailingSlashURL[:len(lessTrailingSlashURL)-1]
 		if len(route.methods) != 0 {
