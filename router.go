@@ -55,7 +55,18 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 		if len(route.methods) != 0 {
 			muxRoute.Methods(route.methods...)
 		}
-		muxRoute = r.MuxRouter.HandleFunc(lessTrailingSlashURL, *route.function)
+		muxRoute = r.MuxRouter.HandleFunc(lessTrailingSlashURL, func(w http.ResponseWriter, r2 *http.Request) {
+			f := *route.function
+			if route.optionsMiddleWare {
+				if strings.ToLower(r2.Method) == "options" {
+					w.WriteHeader(200)
+					return
+				}
+				f(w, r2)
+			} else {
+				f(w, r2)
+			}
+		})
 		if len(route.methods) != 0 {
 			muxRoute.Methods(route.methods...)
 		}
