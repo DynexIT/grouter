@@ -18,13 +18,16 @@ func isPathVariable(text string) bool {
 }
 
 type Router struct {
-	MuxRouter *mux.Router
-	routes    []*Route
+	MuxRouter        *mux.Router
+	routes           []*Route
+	RespondToOptions bool
 }
 
 func NewRouter() *Router {
 	return &Router{
-		MuxRouter: mux.NewRouter(),
+		MuxRouter:        mux.NewRouter(),
+		routes:           make([]*Route, 0),
+		RespondToOptions: false,
 	}
 }
 func (r *Router) BuildMuxRouter() *mux.Router {
@@ -38,39 +41,28 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 	}
 	fmt.Println("Binding Controllers:")
 	for _, route := range sortedRoutes {
-		muxRoute := r.MuxRouter.HandleFunc(*route.path, func(w http.ResponseWriter, r2 *http.Request) {
-			f := *route.function
-			if route.optionsMiddleWare {
-				if strings.ToLower(r2.Method) == "options" {
-					w.WriteHeader(200)
-					return
-				}
-				f(w, r2)
-			} else {
-				f(w, r2)
-			}
-		})
+		muxRoute := r.MuxRouter.HandleFunc(*route.path, *route.function)
 		lessTrailingSlashURL := *route.path
 		lessTrailingSlashURL = lessTrailingSlashURL[:len(lessTrailingSlashURL)-1]
 		if len(route.methods) != 0 {
 			muxRoute.Methods(route.methods...)
 		}
-		muxRoute = r.MuxRouter.HandleFunc(lessTrailingSlashURL, func(w http.ResponseWriter, r2 *http.Request) {
-			f := *route.function
-			if route.optionsMiddleWare {
-				if strings.ToLower(r2.Method) == "options" {
-					w.WriteHeader(200)
-					return
-				}
-				f(w, r2)
-			} else {
-				f(w, r2)
-			}
-		})
+		muxRoute = r.MuxRouter.HandleFunc(lessTrailingSlashURL, *route.function)
 		if len(route.methods) != 0 {
 			muxRoute.Methods(route.methods...)
 		}
 		fmt.Println(*route.path)
+	}
+	if r.RespondToOptions {
+		r.MuxRouter.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.ToLower(r.Method) == "options" {
+					w.WriteHeader(http.StatusOK)
+					return
+				}
+				next.ServeHTTP(w, r)
+			})
+		})
 	}
 	return r.MuxRouter
 }
@@ -83,4 +75,7 @@ func (r *Router) Bind(path string, function func(w http.ResponseWriter, r *http.
 	}
 	r.routes = append(r.routes, route)
 	return route
+}
+func (r *Router) RespondOKToOptions(respond bool) {
+	r.RespondToOptions = respond
 }

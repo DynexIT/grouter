@@ -6,20 +6,14 @@ import (
 )
 
 type Route struct {
-	path              *string
-	function          *func(w http.ResponseWriter, r *http.Request)
-	optionsMiddleWare bool
-	variableCount     int
-	methods           []string
+	path          *string
+	function      *func(w http.ResponseWriter, r *http.Request)
+	variableCount int
+	methods       []string
 }
 
 func (a *Route) Methods(methods string) *Route {
 	a.methods = strings.Split(strings.Replace(methods, " ", "", -1), ",")
-	return a
-}
-
-func (a *Route) AllowOptionsMiddleware() *Route {
-	a.optionsMiddleWare = true
 	return a
 }
 
