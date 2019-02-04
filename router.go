@@ -58,6 +58,7 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 	}
 	if r.RespondToOptions {
 		r.MuxRouter.Use(func(next http.Handler) http.Handler {
+			fmt.Println("Using middleware")
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if strings.ToLower(r.Method) == "options" {
 					w.WriteHeader(http.StatusOK)
