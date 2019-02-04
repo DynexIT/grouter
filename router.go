@@ -20,6 +20,7 @@ func isPathVariable(text string) bool {
 type Router struct {
 	MuxRouter        *mux.Router
 	routes           []*Route
+	middlewares      []mux.MiddlewareFunc
 	RespondToOptions bool
 }
 
@@ -60,7 +61,7 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 		fmt.Println(*route.path)
 	}
 	if r.RespondToOptions {
-		r.MuxRouter.Use(func(next http.Handler) http.Handler {
+		r.middlewares = append(r.middlewares, func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if strings.ToLower(r.Method) == "options" {
 					w.WriteHeader(http.StatusOK)
@@ -69,6 +70,9 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 				next.ServeHTTP(w, r)
 			})
 		})
+	}
+	if len(r.middlewares) > 0 {
+		r.MuxRouter.Use(r.middlewares...)
 	}
 	return r.MuxRouter
 }
@@ -84,4 +88,7 @@ func (r *Router) Bind(path string, function func(w http.ResponseWriter, r *http.
 }
 func (r *Router) RespondOKToOptions(respond bool) {
 	r.RespondToOptions = respond
+}
+func (r *Router) Use(mwf ...mux.MiddlewareFunc) {
+	r.middlewares = mwf
 }
