@@ -45,6 +45,9 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 		lessTrailingSlashURL := *route.path
 		lessTrailingSlashURL = lessTrailingSlashURL[:len(lessTrailingSlashURL)-1]
 		if len(route.methods) != 0 {
+			if r.RespondToOptions {
+				route.methods = append(route.methods, "OPTIONS")
+			}
 			muxRoute.Methods(route.methods...)
 		}
 		muxRoute = r.MuxRouter.HandleFunc(lessTrailingSlashURL, *route.function)
