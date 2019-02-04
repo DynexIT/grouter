@@ -61,15 +61,17 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 		fmt.Println(*route.path)
 	}
 	if r.RespondToOptions {
-		r.middlewares = append(r.middlewares, func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if strings.ToLower(r.Method) == "options" {
-					w.WriteHeader(http.StatusOK)
-					return
-				}
-				next.ServeHTTP(w, r)
-			})
-		})
+		r.middlewares = append([]mux.MiddlewareFunc{
+			func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if strings.ToLower(r.Method) == "options" {
+						w.WriteHeader(http.StatusOK)
+						return
+					}
+					next.ServeHTTP(w, r)
+				})
+			},
+		}, r.middlewares...)
 	}
 	if len(r.middlewares) > 0 {
 		r.MuxRouter.Use(r.middlewares...)
