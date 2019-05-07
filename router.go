@@ -66,6 +66,7 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if strings.ToLower(r.Method) == "options" {
 						w.Header().Set("Access-Control-Allow-Origin", "*")
+						w.Header().Set("Access-Control-Allow-Headers", "*")
 						w.WriteHeader(http.StatusOK)
 						return
 					}
