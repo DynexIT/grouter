@@ -67,6 +67,7 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 			}
 			muxRoute.Methods(route.methods...)
 		}
+		fmt.Println(route.path)
 	}
 	for _, route := range sortedPathPrefixes {
 		muxRoute := r.MuxRouter.PathPrefix(*route.path).Handler(http.HandlerFunc(*route.function))
@@ -85,6 +86,7 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 			}
 			muxRoute.Methods(route.methods...)
 		}
+		fmt.Println(route.path)
 	}
 	if r.RespondToOptions {
 		r.middlewares = append([]mux.MiddlewareFunc{
