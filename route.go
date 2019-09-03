@@ -12,8 +12,8 @@ type Route struct {
 	methods       []string
 }
 
-func (a *Route) Methods(methods string) *Route {
-	a.methods = strings.Split(strings.Replace(methods, " ", "", -1), ",")
+func (a *Route) Methods(methods ...string) *Route {
+	a.methods = append(a.methods, methods...)
 	return a
 }
 
