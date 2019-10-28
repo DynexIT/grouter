@@ -4,6 +4,7 @@ pipeline {
     stage('Initialization') {
       steps {
         script{
+          sh 'jenkins-lock-resource -resource=grouter'
           sh 'mkdir ${GOPATH}/src/grouter'
           sh 'cp * ${GOPATH}/src/grouter -R'
           sh 'cd ${GOPATH}/src/grouter'
@@ -30,6 +31,7 @@ pipeline {
     always{
       sh 'cd ../'
       sh "rm -R ${GOPATH}/src/grouter"
+      sh 'jenkins-lock-resource -resource=grouter -unlock=true'
     }
   }
 }
