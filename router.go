@@ -49,7 +49,6 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 			}
 		}
 	}
-	fmt.Println("Binding Controllers:")
 	for _, route := range sortedRoutes {
 		muxRoute := r.MuxRouter.HandleFunc(*route.path, *route.function)
 		lessTrailingSlashURL := *route.path
@@ -67,7 +66,6 @@ func (r *Router) BuildMuxRouter() *mux.Router {
 			}
 			muxRoute.Methods(route.methods...)
 		}
-		fmt.Println(*route.path)
 	}
 	for _, route := range sortedPathPrefixes {
 		muxRoute := r.MuxRouter.PathPrefix(*route.path).Handler(http.HandlerFunc(*route.function))
