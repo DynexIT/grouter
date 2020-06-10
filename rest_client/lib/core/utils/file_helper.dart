@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mime/mime.dart';
@@ -18,6 +19,8 @@ abstract class FileHelper {
   Future<MultipartFile> convertFileToMultipartFile(File file);
 
   String generateMd5(Uint8List data);
+
+  Future<dynamic> decodedJSON(String path);
 }
 
 @LazySingleton(as: FileHelper)
@@ -56,5 +59,11 @@ class FileHelperImpl implements FileHelper {
     var md5 = crypto.md5;
     var digest = md5.convert(bytes);
     return base64.encode(digest.bytes).toString();
+  }
+
+  Future<dynamic> decodedJSON(String path) async {
+    String data = await rootBundle.loadString(path);
+    final jsonResult = json.decode(data);
+    return jsonResult;
   }
 }

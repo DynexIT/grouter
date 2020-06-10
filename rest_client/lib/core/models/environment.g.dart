@@ -6,8 +6,8 @@ part of 'environment.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Environment _$EnvironmentFromJson(Map<String, dynamic> json) {
-  return Environment(
+EnvironmentObject _$EnvironmentObjectFromJson(Map<String, dynamic> json) {
+  return EnvironmentObject(
     name: json['name'] as String,
     color: json['color'] as String,
     data: (json['data'] as Map<String, dynamic>)?.map(
@@ -16,7 +16,7 @@ Environment _$EnvironmentFromJson(Map<String, dynamic> json) {
   );
 }
 
-Map<String, dynamic> _$EnvironmentToJson(Environment instance) =>
+Map<String, dynamic> _$EnvironmentObjectToJson(EnvironmentObject instance) =>
     <String, dynamic>{
       'name': instance.name,
       'color': instance.color,

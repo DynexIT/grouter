@@ -4,4 +4,5 @@ class ViewRoutes {
   //Routes
   static const String Splash = '/splash';
   static const String StartUp = '/startup';
+  static const String Home = '/home';
 }

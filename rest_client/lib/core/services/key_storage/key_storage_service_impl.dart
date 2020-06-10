@@ -3,6 +3,7 @@ import 'package:rest_client/core/models/base_environment.dart';
 import 'package:rest_client/core/models/request_type.dart';
 import 'package:rest_client/core/utils/logger.dart';
 import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'key_storage_service.dart';
 /// Service that is responsible for storing/retrieving data in/from
@@ -40,11 +41,11 @@ class KeyStorageServiceImpl implements KeyStorageService {
   }
 
   Future<void> initHive() async {
+    await Hive.initFlutter();
     Hive.registerAdapter(CurrentEnvironmentAdapter());
     Hive.registerAdapter(RequestTypeAdapter());
     _settingsBox = await Hive.openBox(settings);
     _environmentsBox = await Hive.openBox(environments);
-
   }
 
   @override

@@ -3,15 +3,15 @@ import 'package:json_annotation/json_annotation.dart';
 part 'environment.g.dart';
 
 @JsonSerializable()
-class Environment{
+class EnvironmentObject{
   String name;
   String color;
   Map<String, String> data;
 
-  Environment({this.name, this.color, this.data});
+  EnvironmentObject({this.name, this.color, this.data});
 
-  factory Environment.fromJson(Map<String, dynamic> json) =>
-      _$EnvironmentFromJson(json);
+  factory EnvironmentObject.fromJson(Map<String, dynamic> json) =>
+      _$EnvironmentObjectFromJson(json);
 
-  Map<String, dynamic> toJson() => _$EnvironmentToJson(this);
+  Map<String, dynamic> toJson() => _$EnvironmentObjectToJson(this);
 }

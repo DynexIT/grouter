@@ -28,8 +28,7 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigationService.navigatorKey,
       onGenerateRoute: Router.generateRoute,
 //          builder: _setupFlushBarManager,
-//      initialRoute: ViewRoutes.StartUp,
-      home: HomeView(),
+      initialRoute: ViewRoutes.StartUp,
     );
   }
 }
