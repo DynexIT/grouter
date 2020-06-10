@@ -8,6 +8,7 @@ import 'package:rest_client/ui/widgets/dropdown_menu_extended.dart';
 import 'package:rest_client/ui/widgets/dropdown_menu_short.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_hooks/stacked_hooks.dart';
+import 'package:rest_client/ui/shared/ui_helpers.dart';
 
 class HomeViewDesktop extends ViewModelWidget<HomeViewModel>{
   @override
@@ -16,6 +17,7 @@ class HomeViewDesktop extends ViewModelWidget<HomeViewModel>{
         child: Column(
           children: [
             _RequestField(),
+            UIHelper.verticalSpaceMedium(),
             DropDownMenuExtended(
               title: "Environment",
               items: model.environment.environments,

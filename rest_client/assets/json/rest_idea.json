@@ -1,0 +1,55 @@
+{
+  "base_environment_data": {
+    "variable1": "someInitialValue"
+  },
+  "global_request_headers": {
+    "someHeader": "someValue"
+  },
+  "environments": [
+    {
+      "name": "AWS Deployed",
+      "color": "#ff0000",
+      "data": {
+        "variable1": "someValue",
+        "variable2": "someValue2"
+      }
+    },
+    {
+      "name": "local",
+      "color": "#00ff00",
+      "data": {
+        "variable1": "someOtherValue"
+      }
+    }
+  ],
+  "endpoints": [
+    {
+      "name": "Some Group Name",
+      "children": [
+        {
+          "name": "Some Request Name",
+          "request": {
+            "type": "POST",
+            "url": "http://localhost:8080/{{variable1}}/",
+            "body": "{\"someBodyAttribute\":\"{{variable1}}\"}",
+            "headers": {
+              "someAdditionalToGlobalHeader": "someValue",
+              "maybeAVariableHeader": "{{someVariableName}}"
+            },
+            "documentation": "Maybe some markdown documentation",
+            "variable_opts":{
+              "variable1": [
+                "Hello World!",
+                "Hello World 2!"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Some other group",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,12 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:rest_client/core/models/base_environment.dart';
 import 'package:rest_client/core/models/request_type.dart';
+import 'package:rest_client/core/services/http/http_service.dart';
 import 'package:rest_client/core/services/key_storage/key_storage_service.dart';
 import 'package:rest_client/locator.dart';
 import 'package:stacked/stacked.dart';
 
 class HomeViewModel extends BaseViewModel {
   final _keyStorageService = locator<KeyStorageService>();
+  final _httpService = locator<HttpService>();
 
   CurrentEnvironment environment;
 
@@ -43,5 +45,8 @@ class HomeViewModel extends BaseViewModel {
 
   void onSendPressed(){
     print("Request $request");
+    switch(environment.currentEnvironment){
+
+    }
   }
 }
