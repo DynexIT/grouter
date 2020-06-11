@@ -42,22 +42,10 @@ class KeyStorageServiceImpl implements KeyStorageService {
 
   Future<void> initHive() async {
     await Hive.initFlutter();
-    Hive.registerAdapter(CurrentEnvironmentAdapter());
     Hive.registerAdapter(RequestTypeAdapter());
     _settingsBox = await Hive.openBox(settings);
     _environmentsBox = await Hive.openBox(environments);
   }
-
-  @override
-  CurrentEnvironment get environment => _getFromDisk(env_variables_key,
-      environments) ?? CurrentEnvironment(
-        environments: _environments,
-        variables: {}
-      );
-
-  @override
-  set environment(CurrentEnvironment environment) =>
-      _saveToDisk(env_variables_key, environment, environments);
 
   @override
   RequestType get requestType => _getFromDisk(requestTypes_key, environments) ??

@@ -8,7 +8,6 @@ abstract class KeyStorageService {
   Box settingsBox;
 
   Box environmentsBox;
-  CurrentEnvironment environment;
 
   RequestType requestType;
 }

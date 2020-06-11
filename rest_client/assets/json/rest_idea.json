@@ -31,7 +31,7 @@
           "request": {
             "type": "POST",
             "url": "http://localhost:8080/{{variable1}}/",
-            "body": "{\"someBodyAttribute\":\"{{variable1}}\"}",
+            "body": "{someBodyAttribute:{{variable1}}}",
             "headers": {
               "someAdditionalToGlobalHeader": "someValue",
               "maybeAVariableHeader": "{{someVariableName}}"

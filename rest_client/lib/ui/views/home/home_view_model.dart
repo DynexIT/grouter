@@ -1,10 +1,10 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:observable_ish/list/list.dart';
 import 'package:rest_client/core/models/base_environment.dart';
 import 'package:rest_client/core/models/endpoint_group.dart';
 import 'package:rest_client/core/models/environment.dart';
+import 'package:rest_client/core/models/global_request_headers.dart';
 import 'package:rest_client/core/models/request.dart';
-import 'package:rest_client/core/models/request_type.dart';
 import 'package:rest_client/core/services/http/http_service.dart';
 import 'package:rest_client/core/services/json/json_service.dart';
 import 'package:rest_client/core/services/key_storage/key_storage_service.dart';
@@ -15,13 +15,16 @@ class HomeViewModel extends ReactiveViewModel {
   final _keyStorageService = locator<KeyStorageService>();
   final _httpService = locator<HttpService>();
   final _jsonService = locator<JSONService>();
+  final _formKey = GlobalKey<FormState>();
+
+  GlobalKey<FormState> get formKey => _formKey;
 
   @override
   List<ReactiveServiceMixin> get reactiveServices => [_jsonService];
 
-  CurrentEnvironment environment;
+  bool _autoValidate = false;
 
-  RequestType requestType;
+  bool get autoValidate => _autoValidate;
 
   String request = "http://localhost:8080";
 
@@ -29,15 +32,27 @@ class HomeViewModel extends ReactiveViewModel {
 
   RxList<EnvironmentObject> get environments => _jsonService.environments;
 
+  BaseEnvironment get baseEnv => _jsonService.baseEnv;
+
+  GlobalRequestHeaders get globalHeaders => _jsonService.globalHeaders;
+
   EnvironmentObject selectedEnvironment;
+
+  RequestObject currentRequest;
+
+  String get url => currentRequest.url;
+
+  String get requestType => currentRequest.type;
+
+  Map<String, String> requestVariables = {};
 
   void init() {
     setBusy(true);
     //TODO: ERROR CHECKING
-    selectedEnvironment = environments.first;
-    request = endpointGroups.first.children.first.request.url;
-//    environment = _keyStorageService.environment;
-//    requestType = _keyStorageService.requestType;
+    selectedEnvironment = (environments?.isNotEmpty ?? false) ? environments.first : null;
+    currentRequest = (endpointGroups?.first?.children?.isNotEmpty ?? false) ?
+      endpointGroups.first?.children?.first?.request : null;
+    setCurrentRequestVariables();
     setBusy(false);
   }
 
@@ -46,25 +61,130 @@ class HomeViewModel extends ReactiveViewModel {
     notifyListeners();
   }
 
-  onChangedRequestType(dynamic value){
-    requestType.currentRequestType = value;
-    _keyStorageService.requestType = requestType;
+  void updateRequest(String value) {
+    request = getReplacedString(value);
     notifyListeners();
   }
 
-  void updateRequest(String value) {
-    request = value;
+  void updateVariable(String value, String key){
+    requestVariables[key] = value;
     notifyListeners();
   }
 
   void onRequestTap(RequestObject requestObject) {
-    updateRequest(requestObject.url);
+    if(requestObject?.url?.isNotEmpty ?? false){
+      updateRequest(requestObject.url);
+    }else{
+      //TODO: Default url
+    }
+  }
+
+  void resetRequest(){
+
+  }
+
+  void setCurrentRequestVariables(){
+    List<String> urlVars = [];
+    List<String> bodyVars = [];
+    List<String> headerVars = [];
+    urlVars = getStringVariables(currentRequest.url);
+    bodyVars = getStringVariables(currentRequest.body);
+    headerVars = getMapVariables(currentRequest.headers);
+    for(String variable in urlVars){
+      requestVariables.putIfAbsent(variable, () => "");
+    }
+    for(String variable in bodyVars){
+      requestVariables.putIfAbsent(variable, () => "");
+    }
+    for(String variable in headerVars){
+      requestVariables.putIfAbsent(variable, () => "");
+    }
+    requestVariables.forEach((key, value) {
+      if(!selectedEnvironment.data.containsKey(key)){
+        if (baseEnv.variables.containsKey(key)) {
+          requestVariables[key] = baseEnv.variables[key];
+        }
+      }else{
+        requestVariables[key] = selectedEnvironment.data[key];
+      }
+    });
   }
 
   void onSendPressed(){
-    print("Request $request");
-    switch(environment.currentEnvironment){
+    if (!_formKey.currentState.validate()) {
+      _autoValidate = true;
+      setBusy(false);
+    } else {
+      _formKey.currentState.save();
 
+      setBusy(true);
+
+      String replacedURL = getReplacedString(currentRequest.url);
+      String replacedBody = getReplacedString(currentRequest.body);
+      print("URL: ${replacedURL}");
+      print("BODY: ${replacedBody}");
+//    switch(currentRequest.type){
+//      case "POST":
+//        _httpService.postHttp(replacedURL, currentRequest.body);
+//        break;
+//    }
+      setBusy(false);
     }
+
+  }
+
+  List<String> getMapVariables(Map<String, String> value){
+    List<String> variables = [];
+    for(MapEntry entry in value.entries){
+      if(entry.value.contains("{{")) {
+        Iterable<Match> matches = getStringMatches(entry.value);
+        matches.forEach((m) {
+          variables.add(m.group(1));
+        });
+      }
+    }
+    return variables;
+  }
+
+  List<String> getStringVariables(String value){
+    List<String> variables = [];
+    if(value.contains("{{")) {
+      Iterable<Match> matches = getStringMatches(value);
+      matches.forEach((m) {
+        variables.add(m.group(1));
+      });
+    }
+    return variables;
+  }
+
+  String getReplacedString(String toBeReplaced){
+    String replacedString = toBeReplaced;
+    if(toBeReplaced.contains("{{")){
+      Iterable<Match> matches = getStringMatches(toBeReplaced);
+      List<String> variables = [];
+      List<String> variablesBraces = [];
+      matches.forEach((m) {
+        variablesBraces.add(m.group(0));
+        variables.add(m.group(1));
+      });
+      for (int i = 0; i < variables.length; i++) {
+        if(!selectedEnvironment.data.containsKey(variables[i])){
+          if (baseEnv.variables.containsKey(variables[i])) {
+            replacedString = toBeReplaced.replaceAll(
+                variablesBraces[i], baseEnv.variables[variables[i]]);
+          }
+        }else{
+          replacedString = toBeReplaced.replaceAll(
+              variablesBraces[i], selectedEnvironment.data[variables[i]]);
+        }
+      }
+    }
+    return replacedString;
+  }
+
+  Iterable<Match> getStringMatches(String value){
+    RegExp exp = new RegExp(r"{{(([^}][^}]?|[^}]}?)*)}}");
+    Iterable<Match> matches = exp.allMatches(value);
+    return matches;
   }
 }

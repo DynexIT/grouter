@@ -14,7 +14,11 @@ class HomeView extends StatelessWidget{
       viewModelBuilder: () => HomeViewModel(),
       onModelReady: (model) => model.init(),
       builder: (context, model, child) => Scaffold(
-          body: _Home()
+          body: Form(
+            key: model.formKey,
+            autovalidate: model.autoValidate,
+            child: _Home(),
+          )
       ),
     );
   }

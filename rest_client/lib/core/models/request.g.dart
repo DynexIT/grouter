@@ -13,6 +13,7 @@ RequestObject _$RequestObjectFromJson(Map<String, dynamic> json) {
     headers: (json['headers'] as Map<String, dynamic>)?.map(
       (k, e) => MapEntry(k, e as String),
     ),
+    body: json['body'] as String,
     documentation: json['documentation'] as String,
     variableOpts: json['variable_opts'] as Map<String, dynamic>,
   );
@@ -23,6 +24,7 @@ Map<String, dynamic> _$RequestObjectToJson(RequestObject instance) =>
       'type': instance.type,
       'url': instance.url,
       'headers': instance.headers,
+      'body': instance.body,
       'documentation': instance.documentation,
       'variable_opts': instance.variableOpts,
     };
