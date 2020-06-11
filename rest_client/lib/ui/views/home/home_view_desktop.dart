@@ -77,46 +77,69 @@ class _VariableForm extends ViewModelWidget<HomeViewModel> {
   Widget build(BuildContext context, HomeViewModel model) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      return Column(
-        mainAxisSize: MainAxisSize.max,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [..._buildVariableRows(model, constraints)],
+      return ListView.builder(
+        itemCount: model.requestVariables.length,
+        itemBuilder: (context, index){
+          String key = model.requestVariables.keys.elementAt(index);
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Container(
+                width: constraints.maxWidth * 0.3,
+                child: Text(key),
+              ),
+              _VariableField(constraints: constraints, varKey: key,)
+//              Container(
+//                width: constraints.maxWidth * 0.7,
+//                child: TextFormField(
+//                  initialValue: model.requestVariables[key],
+//                  onChanged: (String value) {
+//                    model.updateVariable(value, key);
+//                  },
+//                  validator: (String value) {
+//                    if (value.isEmpty) {
+//                      return 'Please enter some text';
+//                    }
+//                    return null;
+//                  },
+//                ),
+//              ),
+            ],
+          );
+        }
       );
     });
   }
+}
 
-  List<Widget> _buildVariableRows(HomeViewModel model, BoxConstraints constraints) {
-    List<Widget> variableRows = [];
-    for (MapEntry entry in model.requestVariables.entries) {
-      variableRows.add(Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Container(
-            width: constraints.maxWidth * 0.3,
-            child: Text(entry.key),
-          ),
-          Container(
-            width: constraints.maxWidth * 0.7,
-            child: TextFormField(
-              initialValue: entry.value,
-              onChanged: (String value) {
-                model.updateVariable(value, entry.key);
-              },
-              validator: (String value){
-                if (value.isEmpty) {
-                  return 'Please enter some text';
-                }
-                return null;
-              },
-            ),
-          ),
-        ],
-      ));
-    }
-    return variableRows;
+class _VariableField extends HookViewModelWidget<HomeViewModel>{
+  final BoxConstraints constraints;
+  final String varKey;
+
+  _VariableField({Key key, this.constraints, this.varKey}) : super(key: key);
+
+  @override
+  Widget buildViewModelWidget(BuildContext context, HomeViewModel model) {
+    var varController = useTextEditingController(text:
+      model.requestVariables[varKey]);
+    return Container(
+      width: constraints.maxWidth * 0.7,
+      child: TextFormField(
+        controller: varController,
+        onChanged: (String value) {
+          varController.text = value;
+          model.updateVariable(value, varKey);
+        },
+        validator: (String value) {
+          if (value.isEmpty) {
+            return 'Please enter some text';
+          }
+          return null;
+        },
+      ),
+    );
   }
 }
 
@@ -164,20 +187,42 @@ class _EndpointGroups extends ViewModelWidget<HomeViewModel> {
             itemCount: model.endpointGroups.length,
             itemBuilder: (context, index) {
               return HoverCursor(
-                cursor: Cursor.pointer,
-                child: ExpandablePanel(
-                  header: Text(model.endpointGroups[index].name),
-                  collapsed: Text(
-                    model.endpointGroups[index].name,
-                    softWrap: true,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  expanded: _Endpoint(
-                    endpoints: model?.endpointGroups[index]?.children ?? null,
-                  ),
-                ),
-              );
+                  cursor: Cursor.pointer,
+                  child: ExpandableNotifier(
+                      initialExpanded: false,
+                      child: ScrollOnExpand(
+                          child: Expandable(
+                            collapsed: ExpandableButton(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      model.endpointGroups[index].name,
+                                      softWrap: true,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Icon(Icons.chevron_right),
+                              ],
+                          ),
+                        ),
+                        expanded: Column(
+                          children: [
+                            _Endpoint(
+                              endpoints:
+                                  model?.endpointGroups[index]?.children ??
+                                      null,
+                            ),
+                            ExpandableButton(
+                              child: Text("Back"),
+                            )
+                          ],
+                        ),
+                      ))));
             },
           )
         : Container();

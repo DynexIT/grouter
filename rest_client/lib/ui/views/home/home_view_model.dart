@@ -58,6 +58,7 @@ class HomeViewModel extends ReactiveViewModel {
 
   onChangedEnvironment(EnvironmentObject value){
     selectedEnvironment = value;
+    setCurrentRequestVariables();
     notifyListeners();
   }
 
@@ -105,6 +106,7 @@ class HomeViewModel extends ReactiveViewModel {
           requestVariables[key] = baseEnv.variables[key];
         }
       }else{
+        print("VAR: ${selectedEnvironment.data[key]}");
         requestVariables[key] = selectedEnvironment.data[key];
       }
     });
