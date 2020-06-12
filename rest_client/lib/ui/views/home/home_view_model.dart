@@ -7,11 +7,13 @@ import 'package:rest_client/core/models/endpoint_group.dart';
 import 'package:rest_client/core/models/environment.dart';
 import 'package:rest_client/core/models/global_request_headers.dart';
 import 'package:rest_client/core/models/request.dart';
+import 'package:rest_client/core/models/request_history.dart';
 import 'package:rest_client/core/services/http/http_service.dart';
 import 'package:rest_client/core/services/json/json_service.dart';
 import 'package:rest_client/core/services/key_storage/key_storage_service.dart';
 import 'package:rest_client/locator.dart';
 import 'package:stacked/stacked.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class HomeViewModel extends ReactiveViewModel {
   final _keyStorageService = locator<KeyStorageService>();
@@ -52,6 +54,8 @@ class HomeViewModel extends ReactiveViewModel {
 
   Map<String, String> requestBody = {};
 
+  Map<String, RequestHistory> allRequestHistory = {};
+
   int _tabIndex = 0;
   int get tabIndex => _tabIndex;
 
@@ -63,6 +67,10 @@ class HomeViewModel extends ReactiveViewModel {
       endpointGroups.first?.children?.first?.request : null;
     setCurrentRequestVariables();
     setBusy(false);
+  }
+
+  void onHistorySelected(String choice){
+
   }
 
   onChangedEnvironment(EnvironmentObject value){
@@ -116,7 +124,7 @@ class HomeViewModel extends ReactiveViewModel {
     });
   }
 
-  void onSendPressed(){
+  Future<void> onSendPressed() async {
     if (!_formKey.currentState.validate()) {
       _autoValidate = true;
       setBusy(false);
@@ -137,21 +145,35 @@ class HomeViewModel extends ReactiveViewModel {
       print("URL: ${replacedURL}");
       print("BODY: ${replacedBody}");
       print("Headers: ${replacedHeaders}");
-//      switch(currentRequest.type){
-//        case "POST":
-//          _httpService.postHttp(replacedURL, currentRequest.body,
-//              headers: replacedHeaders);
-//          break;
-//        case "GET":
-//          _httpService.getHttp(replacedURL, headers: replacedHeaders);
-//          break;
-//        default:
-//          _httpService.getHttp(replacedURL, headers: replacedHeaders);
-//          break;
-//      }
+      var result;
+      switch(currentRequest.type){
+        case "POST":
+          result = await _httpService.postHttp(replacedURL, currentRequest.body,
+              headers: replacedHeaders);
+          break;
+        case "GET":
+          result = await _httpService.getHttp(replacedURL, headers: replacedHeaders);
+          break;
+        default:
+          result = await _httpService.getHttp(replacedURL, headers: replacedHeaders);
+          break;
+      }
+      print("RESULT: $result");
+      //Add to request history
+      RequestHistory requestHistory = RequestHistory(
+        url: replacedURL,
+        headers: replacedHeaders,
+        type: currentRequest.type,
+      );
+      addToRequestHistory(requestHistory);
       setBusy(false);
     }
+  }
 
+  void addToRequestHistory(RequestHistory requestHistory){
+    final now =  DateTime.now();
+    String formattedTime = timeago.format(now);
+    allRequestHistory[formattedTime] = requestHistory;
   }
 
   List<String> getMapVariables(Map value){

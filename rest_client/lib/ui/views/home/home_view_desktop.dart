@@ -4,10 +4,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cursor/flutter_cursor.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_json_widget/flutter_json_widget.dart';
 import 'package:rest_client/core/models/endpoint.dart';
 import 'package:rest_client/core/models/environment.dart';
 import 'package:rest_client/core/models/request.dart';
+import 'package:rest_client/core/models/request_history.dart';
 import 'package:rest_client/ui/shared/color_pallete.dart';
 import 'package:rest_client/ui/views/home/home_view_model.dart';
 import 'package:rest_client/ui/widgets/centered_view.dart';
@@ -25,31 +25,77 @@ class HomeViewDesktop extends ViewModelWidget<HomeViewModel> {
   Widget build(BuildContext context, HomeViewModel model) {
     return CenteredView(
         child: Column(
-      mainAxisSize: MainAxisSize.max,
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+          (model.allRequestHistory?.isNotEmpty ?? false)
+              ? Flexible(
+                  child: _HistoryView(),
+                )
+              : Container(),
+          UIHelper.verticalSpaceMedium(),
+          Flexible(
+            child: _RequestField(),
+          ),
+          UIHelper.verticalSpaceMedium(),
+          Flexible(
+            child: _VariableForm(),
+          ),
+          UIHelper.verticalSpaceMedium(),
+          Flexible(
+            child: _TabView(),
+          ),
+          UIHelper.verticalSpaceMedium(),
+          Flexible(
+            child: _Environments(),
+          ),
+          UIHelper.verticalSpaceMedium(),
+          Flexible(
+            child: _EndpointGroups(),
+          )
+        ]));
+  }
+}
+
+class _HistoryView extends ViewModelWidget<HomeViewModel> {
+  @override
+  Widget build(BuildContext context, HomeViewModel model) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Flexible(
-          child: _RequestField(),
-        ),
-        UIHelper.verticalSpaceMedium(),
-        Flexible(
-          child: _VariableForm(),
-        ),
-        UIHelper.verticalSpaceMedium(),
-        Flexible(
-          child: _TabView(),
-        ),
-        UIHelper.verticalSpaceMedium(),
-        Flexible(
-          child: _Environments(),
-        ),
-        UIHelper.verticalSpaceMedium(),
-        Flexible(
-          child: _EndpointGroups(),
+            child: PopupMenuButton<String>(
+                onSelected: model.onHistorySelected,
+                itemBuilder: (BuildContext context) {
+                  return model.allRequestHistory.keys.map((String time) {
+                    return PopupMenuItem<String>(
+                      value: time,
+                      child: Text(time),
+                    );
+                  }).toList();
+                })),
+        Expanded(
+          child: ListView.builder(
+              itemCount: model.allRequestHistory.length,
+              itemBuilder: (context, index) {
+                String key = model.allRequestHistory.keys.elementAt(index);
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Text(model.allRequestHistory[key].type),
+                    Text(model.allRequestHistory[key].url),
+                    Text(model.allRequestHistory[key].headers.toString()),
+                  ],
+                );
+              }),
         )
       ],
-    ));
+    );
   }
 }
 
@@ -76,7 +122,12 @@ class _RequestField extends HookViewModelWidget<HomeViewModel> {
         ),
         HoverCursor(
           cursor: Cursor.pointer,
-          child: FlatButton(onPressed: model.onSendPressed, child: Text('SEND')),
+          child: FlatButton(
+              onPressed: () async {
+                FocusScope.of(context).requestFocus(FocusNode());
+                await model.onSendPressed();
+              },
+              child: Text('SEND')),
         )
       ],
     );
@@ -89,28 +140,30 @@ class _VariableForm extends ViewModelWidget<HomeViewModel> {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
       return ListView.builder(
-        itemCount: model.requestVariables.length,
-        itemBuilder: (context, index){
-          String key = model.requestVariables.keys.elementAt(index);
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Container(
-                width: constraints.maxWidth * 0.3,
-                child: Text(key),
-              ),
-              _VariableField(constraints: constraints, varKey: key,)
-            ],
-          );
-        }
-      );
+          itemCount: model.requestVariables.length,
+          itemBuilder: (context, index) {
+            String key = model.requestVariables.keys.elementAt(index);
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Container(
+                  width: constraints.maxWidth * 0.3,
+                  child: Text(key),
+                ),
+                _VariableField(
+                  constraints: constraints,
+                  varKey: key,
+                )
+              ],
+            );
+          });
     });
   }
 }
 
-class _VariableField extends HookViewModelWidget<HomeViewModel>{
+class _VariableField extends HookViewModelWidget<HomeViewModel> {
   final BoxConstraints constraints;
   final String varKey;
 
@@ -118,8 +171,8 @@ class _VariableField extends HookViewModelWidget<HomeViewModel>{
 
   @override
   Widget buildViewModelWidget(BuildContext context, HomeViewModel model) {
-    var varController = useTextEditingController(text:
-      model.requestVariables[varKey]);
+    var varController =
+        useTextEditingController(text: model.requestVariables[varKey]);
     var focusNode = useFocusNode();
     return Container(
       width: constraints.maxWidth * 0.7,
@@ -144,7 +197,7 @@ class _VariableField extends HookViewModelWidget<HomeViewModel>{
   }
 }
 
-class _TabView extends ViewModelWidget<HomeViewModel>{
+class _TabView extends ViewModelWidget<HomeViewModel> {
   final _views = <Widget>[
     _RequestBody(),
     _Headers(),
@@ -162,8 +215,12 @@ class _TabView extends ViewModelWidget<HomeViewModel>{
               children: [
                 TabBar(
                   tabs: [
-                    Tab(text: "Body",),
-                    Tab(text: "Header",),
+                    Tab(
+                      text: "Body",
+                    ),
+                    Tab(
+                      text: "Header",
+                    ),
                   ],
                 ),
               ],
@@ -178,12 +235,11 @@ class _TabView extends ViewModelWidget<HomeViewModel>{
   }
 }
 
-class _RequestBody extends ViewModelWidget<HomeViewModel>{
+class _RequestBody extends ViewModelWidget<HomeViewModel> {
   @override
   Widget build(BuildContext context, HomeViewModel model) {
-    final Map<String, String> body = Map<String,String>.from(
-        jsonDecode(model.currentRequest.body)
-    );
+    final Map<String, String> body =
+        Map<String, String>.from(jsonDecode(model.currentRequest.body));
     return Column(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.start,
@@ -195,7 +251,7 @@ class _RequestBody extends ViewModelWidget<HomeViewModel>{
         Expanded(
           child: ListView.builder(
               itemCount: body.length,
-              itemBuilder: (context, index){
+              itemBuilder: (context, index) {
                 String key = body.keys.elementAt(index);
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -207,8 +263,7 @@ class _RequestBody extends ViewModelWidget<HomeViewModel>{
                     ),
                   ],
                 );
-              }
-          ),
+              }),
         ),
         Container(
           child: Text('}'),
@@ -216,15 +271,14 @@ class _RequestBody extends ViewModelWidget<HomeViewModel>{
       ],
     );
   }
-
 }
 
-class _Headers extends ViewModelWidget<HomeViewModel>{
+class _Headers extends ViewModelWidget<HomeViewModel> {
   @override
   Widget build(BuildContext context, HomeViewModel model) {
     return ListView.builder(
         itemCount: model.currentRequest.headers.length,
-        itemBuilder: (context, index){
+        itemBuilder: (context, index) {
           String key = model.currentRequest.headers.keys.elementAt(index);
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -241,8 +295,7 @@ class _Headers extends ViewModelWidget<HomeViewModel>{
               )
             ],
           );
-        }
-    );
+        });
   }
 }
 
@@ -261,9 +314,8 @@ class _Environments extends ViewModelWidget<HomeViewModel> {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: model.selectedEnvironment.color.toColor()
-                  ),
+                      shape: BoxShape.circle,
+                      color: model.selectedEnvironment.color.toColor()),
                 ),
                 UIHelper.horizontalSpaceMedium(),
                 Expanded(
@@ -282,8 +334,8 @@ class _Environments extends ViewModelWidget<HomeViewModel> {
                     ),
                     itemHeight: 50,
                     value: model.selectedEnvironment,
-                    items:
-                    model.environments.map((EnvironmentObject environmentObject) {
+                    items: model.environments
+                        .map((EnvironmentObject environmentObject) {
                       return DropdownMenuItem<EnvironmentObject>(
                         value: environmentObject,
                         child: Text(environmentObject.name),
@@ -313,22 +365,22 @@ class _EndpointGroups extends ViewModelWidget<HomeViewModel> {
                       initialExpanded: false,
                       child: ScrollOnExpand(
                           child: Expandable(
-                            collapsed: ExpandableButton(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      model.endpointGroups[index].name,
-                                      softWrap: true,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Icon(Icons.chevron_right),
-                              ],
+                        collapsed: ExpandableButton(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.max,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  model.endpointGroups[index].name,
+                                  softWrap: true,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Icon(Icons.chevron_right),
+                            ],
                           ),
                         ),
                         expanded: Column(
