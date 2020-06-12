@@ -128,6 +128,12 @@ class HomeViewModel extends ReactiveViewModel {
       String replacedURL = getReplacedString(currentRequest.url);
       String replacedBody = getReplacedString(currentRequest.body);
       Map<String, String> replacedHeaders = getReplacedMap(currentRequest.headers);
+      //Add global headers to request
+      if(globalHeaders?.headers?.isNotEmpty ?? false){
+        globalHeaders.headers.forEach((key, value) {
+          replacedHeaders[key] = value;
+        });
+      }
       print("URL: ${replacedURL}");
       print("BODY: ${replacedBody}");
       print("Headers: ${replacedHeaders}");
