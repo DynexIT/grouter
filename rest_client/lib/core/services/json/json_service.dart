@@ -37,13 +37,13 @@ class JSONService with ReactiveServiceMixin{
 
   Future<void> init() async {
     final json = await _fileHelper.decodedJSON("assets/json/rest_idea.json");
-    Map<String, dynamic> baseVariables = {};
-    Map<String, dynamic> globalHeaders = {};
+    Map<String, String> baseVariables = {};
+    Map<String, String> globalHeaders = {};
     if(json['base_environment_data'] != null){
-      baseVariables = json['base_environment_data'];
+      baseVariables = Map<String, String>.from(json['base_environment_data']);
     }
     if(json['global_request_headers'] != null){
-      globalHeaders = json['global_request_headers'];
+      globalHeaders =  Map<String, String>.from(json['global_request_headers']);
     }
     for(dynamic json in json['environments']){
       _environments.add(EnvironmentObject.fromJson(json));

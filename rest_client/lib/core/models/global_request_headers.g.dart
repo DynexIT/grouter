@@ -8,7 +8,9 @@ part of 'global_request_headers.dart';
 
 GlobalRequestHeaders _$GlobalRequestHeadersFromJson(Map<String, dynamic> json) {
   return GlobalRequestHeaders(
-    headers: json['headers'] as Map<String, dynamic>,
+    headers: (json['headers'] as Map<String, dynamic>)?.map(
+      (k, e) => MapEntry(k, e as String),
+    ),
   );
 }
 

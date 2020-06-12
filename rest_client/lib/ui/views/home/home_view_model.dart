@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:observable_ish/list/list.dart';
 import 'package:rest_client/core/models/base_environment.dart';
@@ -46,12 +48,20 @@ class HomeViewModel extends ReactiveViewModel {
 
   Map<String, String> requestVariables = {};
 
+  Map<String, String> requestHeaders = {};
+
+  Map<String, String> requestBody = {};
+
+  int _tabIndex = 0;
+  int get tabIndex => _tabIndex;
+
   void init() {
     setBusy(true);
     //TODO: ERROR CHECKING
     selectedEnvironment = (environments?.isNotEmpty ?? false) ? environments.first : null;
     currentRequest = (endpointGroups?.first?.children?.isNotEmpty ?? false) ?
       endpointGroups.first?.children?.first?.request : null;
+    requestBody = Map<String, String>.from(jsonDecode(currentRequest.body));
     setCurrentRequestVariables();
     setBusy(false);
   }
@@ -80,10 +90,6 @@ class HomeViewModel extends ReactiveViewModel {
     }
   }
 
-  void resetRequest(){
-
-  }
-
   void setCurrentRequestVariables(){
     List<String> urlVars = [];
     List<String> bodyVars = [];
@@ -106,7 +112,6 @@ class HomeViewModel extends ReactiveViewModel {
           requestVariables[key] = baseEnv.variables[key];
         }
       }else{
-        print("VAR: ${selectedEnvironment.data[key]}");
         requestVariables[key] = selectedEnvironment.data[key];
       }
     });
@@ -123,19 +128,28 @@ class HomeViewModel extends ReactiveViewModel {
 
       String replacedURL = getReplacedString(currentRequest.url);
       String replacedBody = getReplacedString(currentRequest.body);
+      Map<String, String> replacedHeaders = getReplacedMap(currentRequest.headers);
       print("URL: ${replacedURL}");
       print("BODY: ${replacedBody}");
-//    switch(currentRequest.type){
-//      case "POST":
-//        _httpService.postHttp(replacedURL, currentRequest.body);
-//        break;
-//    }
+      print("Headers: ${replacedHeaders}");
+//      switch(currentRequest.type){
+//        case "POST":
+//          _httpService.postHttp(replacedURL, currentRequest.body,
+//              headers: replacedHeaders);
+//          break;
+//        case "GET":
+//          _httpService.getHttp(replacedURL, headers: replacedHeaders);
+//          break;
+//        default:
+//          _httpService.getHttp(replacedURL, headers: replacedHeaders);
+//          break;
+//      }
       setBusy(false);
     }
 
   }
 
-  List<String> getMapVariables(Map<String, String> value){
+  List<String> getMapVariables(Map value){
     List<String> variables = [];
     for(MapEntry entry in value.entries){
       if(entry.value.contains("{{")) {
@@ -182,6 +196,33 @@ class HomeViewModel extends ReactiveViewModel {
       }
     }
     return replacedString;
+  }
+  
+  Map<String, String> getReplacedMap(Map<String, String> toBeReplaced){
+    Map<String, String> replacedMap = toBeReplaced;
+    replacedMap.forEach((key, value) { 
+      if(value.contains("{{")){
+        Iterable<Match> matches = getStringMatches(value);
+        List<String> variables = [];
+        List<String> variablesBraces = [];
+        matches.forEach((m) {
+          variablesBraces.add(m.group(0));
+          variables.add(m.group(1));
+        });
+        for (int i = 0; i < variables.length; i++) {
+          if(!selectedEnvironment.data.containsKey(variables[i])){
+            if (globalHeaders.headers.containsKey(variables[i])) {
+              replacedMap[key] = value.replaceAll(variablesBraces[i],
+                  baseEnv.variables[variables[i]]);
+            }
+          }else{
+            replacedMap[key] = value.replaceAll(variablesBraces[i],
+                selectedEnvironment.data[variables[i]]);
+          }
+        }
+      }
+    });
+    return replacedMap;
   }
 
   Iterable<Match> getStringMatches(String value){

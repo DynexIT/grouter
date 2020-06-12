@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cursor/flutter_cursor.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_json_widget/flutter_json_widget.dart';
 import 'package:rest_client/core/models/endpoint.dart';
 import 'package:rest_client/core/models/environment.dart';
 import 'package:rest_client/core/models/request.dart';
@@ -12,9 +13,12 @@ import 'package:rest_client/ui/views/home/home_view_model.dart';
 import 'package:rest_client/ui/widgets/centered_view.dart';
 import 'package:rest_client/ui/widgets/dropdown_menu_extended.dart';
 import 'package:rest_client/ui/widgets/dropdown_menu_short.dart';
+import 'package:rest_client/ui/widgets/lazy_indexed_stack.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_hooks/stacked_hooks.dart';
 import 'package:rest_client/ui/shared/ui_helpers.dart';
+import 'package:supercharged/supercharged.dart';
+import 'dart:convert';
 
 class HomeViewDesktop extends ViewModelWidget<HomeViewModel> {
   @override
@@ -31,6 +35,10 @@ class HomeViewDesktop extends ViewModelWidget<HomeViewModel> {
         UIHelper.verticalSpaceMedium(),
         Flexible(
           child: _VariableForm(),
+        ),
+        UIHelper.verticalSpaceMedium(),
+        Flexible(
+          child: _TabView(),
         ),
         UIHelper.verticalSpaceMedium(),
         Flexible(
@@ -66,7 +74,10 @@ class _RequestField extends HookViewModelWidget<HomeViewModel> {
                 color: Colors.white, fontFamily: 'Avenir', fontSize: 22),
           ),
         ),
-        FlatButton(onPressed: model.onSendPressed, child: Text('SEND'))
+        HoverCursor(
+          cursor: Cursor.pointer,
+          child: FlatButton(onPressed: model.onSendPressed, child: Text('SEND')),
+        )
       ],
     );
   }
@@ -91,21 +102,6 @@ class _VariableForm extends ViewModelWidget<HomeViewModel> {
                 child: Text(key),
               ),
               _VariableField(constraints: constraints, varKey: key,)
-//              Container(
-//                width: constraints.maxWidth * 0.7,
-//                child: TextFormField(
-//                  initialValue: model.requestVariables[key],
-//                  onChanged: (String value) {
-//                    model.updateVariable(value, key);
-//                  },
-//                  validator: (String value) {
-//                    if (value.isEmpty) {
-//                      return 'Please enter some text';
-//                    }
-//                    return null;
-//                  },
-//                ),
-//              ),
             ],
           );
         }
@@ -126,19 +122,124 @@ class _VariableField extends HookViewModelWidget<HomeViewModel>{
       model.requestVariables[varKey]);
     return Container(
       width: constraints.maxWidth * 0.7,
-      child: TextFormField(
-        controller: varController,
-        onChanged: (String value) {
-          varController.text = value;
-          model.updateVariable(value, varKey);
-        },
-        validator: (String value) {
-          if (value.isEmpty) {
-            return 'Please enter some text';
-          }
-          return null;
-        },
+      child: HoverCursor(
+        cursor: Cursor.pointer,
+        child: TextFormField(
+          controller: varController,
+          onChanged: (String value) {
+            varController.text = value;
+            model.updateVariable(value, varKey);
+          },
+          validator: (String value) {
+            if (value.isEmpty) {
+              return 'Please enter some text';
+            }
+            return null;
+          },
+        ),
       ),
+    );
+  }
+}
+
+class _TabView extends ViewModelWidget<HomeViewModel>{
+  final _views = <Widget>[
+    _RequestBody(),
+    _Headers(),
+  ];
+
+  @override
+  Widget build(BuildContext context, HomeViewModel model) {
+    return Scaffold(
+      body: DefaultTabController(
+        length: _views.length,
+        child: Scaffold(
+          appBar: AppBar(
+            flexibleSpace: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TabBar(
+                  tabs: [
+                    Tab(text: "Body",),
+                    Tab(text: "Header",),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            children: _views,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RequestBody extends ViewModelWidget<HomeViewModel>{
+  @override
+  Widget build(BuildContext context, HomeViewModel model) {
+    final Map<String, String> body = Map<String,String>.from(
+        jsonDecode(model.currentRequest.body)
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          child: Text('{'),
+        ),
+        Expanded(
+          child: ListView.builder(
+              itemCount: body.length,
+              itemBuilder: (context, index){
+                String key = body.keys.elementAt(index);
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Expanded(
+                      child: Text("$key : ${body[key]}"),
+                    ),
+                  ],
+                );
+              }
+          ),
+        ),
+        Container(
+          child: Text('}'),
+        ),
+      ],
+    );
+  }
+
+}
+
+class _Headers extends ViewModelWidget<HomeViewModel>{
+  @override
+  Widget build(BuildContext context, HomeViewModel model) {
+    return ListView.builder(
+        itemCount: model.currentRequest.headers.length,
+        itemBuilder: (context, index){
+          String key = model.currentRequest.headers.keys.elementAt(index);
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Flexible(
+                child: Container(
+                  child: Text(key),
+                ),
+              ),
+              Flexible(
+                child: Text(model.currentRequest.headers[key]),
+              )
+            ],
+          );
+        }
     );
   }
 }
@@ -149,30 +250,48 @@ class _Environments extends ViewModelWidget<HomeViewModel> {
     return (model.environments?.isNotEmpty ?? false)
         ? HoverCursor(
             cursor: Cursor.pointer,
-            child: DropdownButtonFormField(
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.all(5.0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                  borderSide: BorderSide(color: Colors.black),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: model.selectedEnvironment.color.toColor()
+                  ),
                 ),
-                labelText: "Environments",
-                labelStyle: TextStyle(
-                    color: ColorPalette.Grey.P700,
-                    fontFamily: 'Avenir',
-                    fontSize: 22),
-              ),
-              itemHeight: 50,
-              value: model.selectedEnvironment,
-              items:
-                  model.environments.map((EnvironmentObject environmentObject) {
-                return DropdownMenuItem<EnvironmentObject>(
-                  value: environmentObject,
-                  child: Text(environmentObject.name),
-                );
-              }).toList(),
-              onChanged: model.onChangedEnvironment,
-              isExpanded: true,
+                UIHelper.horizontalSpaceMedium(),
+                Expanded(
+                  child: DropdownButtonFormField(
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.all(5.0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: BorderSide(color: Colors.black),
+                      ),
+                      labelText: "Environments",
+                      labelStyle: TextStyle(
+                          color: ColorPalette.Grey.P700,
+                          fontFamily: 'Avenir',
+                          fontSize: 22),
+                    ),
+                    itemHeight: 50,
+                    value: model.selectedEnvironment,
+                    items:
+                    model.environments.map((EnvironmentObject environmentObject) {
+                      return DropdownMenuItem<EnvironmentObject>(
+                        value: environmentObject,
+                        child: Text(environmentObject.name),
+                      );
+                    }).toList(),
+                    onChanged: model.onChangedEnvironment,
+                    isExpanded: true,
+                  ),
+                )
+              ],
             ))
         : Container();
   }

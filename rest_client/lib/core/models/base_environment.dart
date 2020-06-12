@@ -5,7 +5,7 @@ part 'base_environment.g.dart';
 
 @JsonSerializable()
 class BaseEnvironment{
-  Map<String, dynamic> variables;
+  Map<String, String> variables;
 
   BaseEnvironment({this.variables});
 

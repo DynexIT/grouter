@@ -5,7 +5,7 @@ part 'global_request_headers.g.dart';
 
 @JsonSerializable()
 class GlobalRequestHeaders{
-  Map<String, dynamic> headers;
+  Map<String, String> headers;
 
   GlobalRequestHeaders({this.headers});
 

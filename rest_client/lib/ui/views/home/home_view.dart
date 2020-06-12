@@ -13,12 +13,14 @@ class HomeView extends StatelessWidget{
     return ViewModelBuilder<HomeViewModel>.reactive(
       viewModelBuilder: () => HomeViewModel(),
       onModelReady: (model) => model.init(),
-      builder: (context, model, child) => Scaffold(
-          body: Form(
-            key: model.formKey,
-            autovalidate: model.autoValidate,
-            child: _Home(),
-          )
+      builder: (context, model, child) => SafeArea(
+        child: Scaffold(
+            body: Form(
+              key: model.formKey,
+              autovalidate: model.autoValidate,
+              child: _Home(),
+            )
+        ),
       ),
     );
   }
@@ -33,6 +35,7 @@ class _Home extends ViewModelWidget<HomeViewModel> {
     }
 
     return ScreenTypeLayout.builder(
+      mobile: (BuildContext context) => HomeViewDesktop(),
       desktop: (BuildContext context) => HomeViewDesktop(),
     );
   }
