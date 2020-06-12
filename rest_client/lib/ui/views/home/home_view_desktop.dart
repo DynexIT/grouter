@@ -120,14 +120,16 @@ class _VariableField extends HookViewModelWidget<HomeViewModel>{
   Widget buildViewModelWidget(BuildContext context, HomeViewModel model) {
     var varController = useTextEditingController(text:
       model.requestVariables[varKey]);
+    var focusNode = useFocusNode();
     return Container(
       width: constraints.maxWidth * 0.7,
       child: HoverCursor(
         cursor: Cursor.pointer,
         child: TextFormField(
+          textDirection: TextDirection.ltr,
           controller: varController,
+          focusNode: focusNode,
           onChanged: (String value) {
-            varController.text = value;
             model.updateVariable(value, varKey);
           },
           validator: (String value) {

@@ -61,7 +61,6 @@ class HomeViewModel extends ReactiveViewModel {
     selectedEnvironment = (environments?.isNotEmpty ?? false) ? environments.first : null;
     currentRequest = (endpointGroups?.first?.children?.isNotEmpty ?? false) ?
       endpointGroups.first?.children?.first?.request : null;
-    requestBody = Map<String, String>.from(jsonDecode(currentRequest.body));
     setCurrentRequestVariables();
     setBusy(false);
   }
@@ -184,14 +183,19 @@ class HomeViewModel extends ReactiveViewModel {
         variables.add(m.group(1));
       });
       for (int i = 0; i < variables.length; i++) {
-        if(!selectedEnvironment.data.containsKey(variables[i])){
-          if (baseEnv.variables.containsKey(variables[i])) {
+        if(requestVariables.containsKey(variables[i])){
+          replacedString = toBeReplaced.replaceAll(variablesBraces[i],
+              requestVariables[variables[i]]);
+        }else {
+          if (!selectedEnvironment.data.containsKey(variables[i])) {
+            if (baseEnv.variables.containsKey(variables[i])) {
+              replacedString = toBeReplaced.replaceAll(
+                  variablesBraces[i], baseEnv.variables[variables[i]]);
+            }
+          } else {
             replacedString = toBeReplaced.replaceAll(
-                variablesBraces[i], baseEnv.variables[variables[i]]);
+                variablesBraces[i], selectedEnvironment.data[variables[i]]);
           }
-        }else{
-          replacedString = toBeReplaced.replaceAll(
-              variablesBraces[i], selectedEnvironment.data[variables[i]]);
         }
       }
     }
@@ -210,14 +214,19 @@ class HomeViewModel extends ReactiveViewModel {
           variables.add(m.group(1));
         });
         for (int i = 0; i < variables.length; i++) {
-          if(!selectedEnvironment.data.containsKey(variables[i])){
-            if (globalHeaders.headers.containsKey(variables[i])) {
-              replacedMap[key] = value.replaceAll(variablesBraces[i],
-                  baseEnv.variables[variables[i]]);
-            }
-          }else{
+          if(requestVariables.containsKey(variables[i])){
             replacedMap[key] = value.replaceAll(variablesBraces[i],
-                selectedEnvironment.data[variables[i]]);
+                requestVariables[variables[i]]);
+          }else{
+            if(!selectedEnvironment.data.containsKey(variables[i])){
+              if (globalHeaders.headers.containsKey(variables[i])) {
+                replacedMap[key] = value.replaceAll(variablesBraces[i],
+                    baseEnv.variables[variables[i]]);
+              }
+            }else {
+              replacedMap[key] = value.replaceAll(variablesBraces[i],
+                  selectedEnvironment.data[variables[i]]);
+            }
           }
         }
       }
